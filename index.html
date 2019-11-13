@@ -19,6 +19,18 @@ limitations under the License.
 <head>
     <title>Google Sheets API Quickstart</title>
     <meta charset="utf-8" />
+    <link rel="stylesheet" href="https://ga-dev-tools.appspot.com/public/css/index.css" />
+    <style>
+        select:required:invalid {
+            color: gray;
+        }
+        option[value=""][disabled] {
+            display: none;
+        }
+        option {
+            color: black;
+        }
+    </style>
 </head>
 <body>
 <p>Google Sheets API Quickstart</p>
@@ -27,9 +39,57 @@ limitations under the License.
 <button id="authorize_button" style="display: none;">Authorize</button>
 <button id="signout_button" style="display: none;">Sign Out</button>
 
-<pre id="content" style="white-space: pre-wrap;"></pre>
+<form id="urlForm" class="CampaignUrlForm">
+    <div class="FormControl FormControl--inline FormControl--required"><label class="FormControl-label">Landing Page URL</label>
+        <div class="FormControl-body"><textarea name="url" rows="3" class="FormField" style="height: 34px;" placeholder="https://www.woolworths.com.au/"></textarea>
+            <div class="FormControl-info">The full website URL (e.g. <code>https://www.woolworths.com.au</code>)</div>
+        </div>
+    </div>
+    <div class="FormControl FormControl--inline FormControl--required"><label class="FormControl-label">Channel</label>
+        <div class="FormControl-body">
+            <!-- <input class="FormField" name="utm_medium" placeholder="" value=""> -->
+            <select required class="FormField" name="utm_medium"><option disabled selected hidden value="">utm_medium</option></select>
+            <div class="FormControl-info">utm_medium: (e.g.&nbsp;<code>email</code>,&nbsp;<code>display</code>,&nbsp;<code>social</code>)</div>
+        </div>
+    </div>
+    <div class="FormControl FormControl--inline FormControl--required"><label class="FormControl-label">Source</label>
+        <div class="FormControl-body">
+            <!-- <input disabled class="FormField" name="utm_source" placeholder="utm_source" value=""> -->
+            <select required class="FormField" name="utm_source"><option disabled selected hidden value="">utm_source</option></select>
+            <div class="FormControl-info">utm_source: (e.g.&nbsp;<code>google</code>,&nbsp;<code>newsletter</code>)
+            </div>
+        </div>
+    </div>
+    <div class="FormControl FormControl--inline FormControl--required"><label class="FormControl-label">Campaign Code</label>
+        <div class="FormControl-body"><input class="FormField" name="utm_campaign" placeholder="utm_campaign" value="">
+            <div class="FormControl-info">(e.g. <code>CVM-001</code>,&nbsp;<code>OSP-123</code>)</div>
+        </div>
+    </div>
+    <div class="FormControl FormControl--inline"><label class="FormControl-label">Content</label>
+        <div class="FormControl-body"><input class="FormField" name="utm_content" placeholder="utm_content" value="">
+            <div class="FormControl-info">Use to differentiate ads</div>
+        </div>
+    </div>
+    <div class="FormControl FormControl--inline"><label class="FormControl-label">Campaign Term</label>
+        <div class="FormControl-body" data-children-count="1"><input class="FormField" name="utm_term" placeholder="utm_term" value="">
+            <div class="FormControl-info">Identify any keywords</div>
+        </div>
+    </div>
+    <textarea class="FormField" name="tracking_url" value=""></textarea>
+</form>
+
+
+<button id="debug_toggle" onclick="toggleDebug()">Toggle Debug</button>
+<pre id="debug" style="display:none;white-space:pre-wrap;"></pre>
 
 <script type="text/javascript">
+
+    function toggleDebug() {
+        var d = document.querySelector("#debug");
+        if(d.style.display === "none") { d.style.display = "block" }
+        else { d.style.display = "none" }
+    }
+
     // Client ID and API key from the Developer Console
     var CLIENT_ID = '172275366713-o9ou9hooiou0vn14qjrhqqvhk1bk6jnk.apps.googleusercontent.com';
     var API_KEY = 'AIzaSyCbKj2_MhJ2woEoDTplq4Xp75GJ_0qYLtA';
@@ -82,7 +142,7 @@ limitations under the License.
         if (isSignedIn) {
             authorizeButton.style.display = 'none';
             signoutButton.style.display = 'block';
-            listMajors();
+            getConfig();
         } else {
             authorizeButton.style.display = 'block';
             signoutButton.style.display = 'none';
@@ -110,34 +170,103 @@ limitations under the License.
      * @param {string} message Text to be placed in pre element.
      */
     function appendPre(message) {
-        var pre = document.getElementById('content');
+        var pre = document.getElementById('debug');
         var textContent = document.createTextNode(message + '\n');
         pre.appendChild(textContent);
     }
 
-    /**
-     * Print the names and majors of students in a sample spreadsheet:
-     * https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
-     */
-    function listMajors() {
+    function col(column) {
+        var lookup = function(val) {
+            var base = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', i, j, result = 0;
+            for (i = 0, j = val.length - 1; i < val.length; i += 1, j -= 1) {
+                result += Math.pow(base.length, j) * (base.indexOf(val[i]) + 1);
+            }
+            return result-1;
+        };
+        return [column].map(lookup)[0];
+    }
+
+    function getConfig() {
+
+        window.config = {
+            mediums:{}
+        };
+
         gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId: '1Qcv6qa837YjIuwrDGYmI3wQ2_77PwUaZtRnKqoL5CqE',
-            range: 'types!A2:E',
+            range: 'config!A2:Z'
         }).then(function(response) {
             var range = response.result;
             if (range.values.length > 0) {
-                appendPre('Name, Major:');
                 for (i = 0; i < range.values.length; i++) {
                     var row = range.values[i];
-                    // Print columns A and E, which correspond to indices 0 and 4.
-                    appendPre(row[0] + ', ' + row[4]);
+                    // Columns A,B,C etc. are zero-based indexes
+                    appendPre([row[col("A")],row[col("B")],row[col("C")],row[col("D")],row[col("E")]].join());
+
+                    var medium = row[col("A")];
+                    var source = row[col("B")];
+                    var campaign = row[col("C")];
+                    var content = row[col("D")];
+                    var term = row[col("E")];
+
+                    if(typeof window.config.mediums[medium] == "undefined") {
+                        window.config.mediums[medium] = {
+                            sources:{}
+                        }
+                    }
+                    if(typeof window.config.mediums[medium].sources[source] == "undefined") {
+                        window.config.mediums[medium].sources[source] = {}
+                    }
                 }
             } else {
                 appendPre('No data found.');
             }
+            appendPre(JSON.stringify(config,null,4));
+
+            setupUI(window.config);
+
         }, function(response) {
             appendPre('Error: ' + response.result.error.message);
         });
+    }
+
+    function setupUI(config) {
+        var mediums = Object.keys(config.mediums);
+        var urlField = document.querySelector('[name="url"]');
+        var mediumField = document.querySelector('[name="utm_medium"]');
+        var sourceField = document.querySelector('[name="utm_source"]');
+        var campaignField = document.querySelector('[name="utm_campaign"]');
+        for(var i=0;i<mediums.length;i++){
+            mediumField.innerHTML += '<option value="'+mediums[i]+'">'+mediums[i]+'</option>';
+        }
+        mediumField.addEventListener("change",function(e){
+            sourceField.innerHTML = '<option disabled selected hidden value="">utm_source</option>';
+            var medium = e.currentTarget.value;
+            var sources = Object.keys(config.mediums[medium].sources);
+            for(var i=0;i<sources.length;i++){
+                sourceField.innerHTML += '<option value="'+sources[i]+'">'+sources[i]+'</option>';
+            }
+        });
+        ['change','keyup'].forEach(function(e) {
+            campaignField.addEventListener(e, function(ev){
+                ev.currentTarget.value = ev.currentTarget.value.toUpperCase().replace(/[^A-Z0-9\-]/g,"");
+            });
+        });
+
+        var fields = document.querySelectorAll(".FormField");
+        for(var f=0;f<fields.length;f++){
+            ['change','keyup'].forEach(function(e) {
+                fields[f].addEventListener(e, function(ev){
+                    document.querySelector("[name='tracking_url']").value =
+                        urlField.value +
+                        "?utm_medium="+mediumField.value
+                        +"&utm_source="+sourceField.value
+                        +"&utm_campaign="+campaignField.value
+                        // +"&utm_content="+contentField.value
+                        // +"&utm_term="+termField.value
+                });
+            });
+        }
     }
 
 </script>
