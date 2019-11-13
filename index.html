@@ -22,8 +22,8 @@
 <!--Add buttons to initiate auth sequence and sign out-->
 <button id="authorize_button" style="display: none;">Authorize</button>
 <button id="signout_button" style="display: none;">Sign Out</button>
-
-<form id="urlForm" class="CampaignUrlForm">
+<br />
+<form id="urlForm" class="CampaignUrlForm" style="display:none">
     <div class="FormControl FormControl--inline FormControl--required"><label class="FormControl-label">Landing Page URL</label>
         <div class="FormControl-body"><textarea name="url" rows="3" class="FormField" style="height: 34px;" placeholder="https://www.woolworths.com.au/"></textarea>
             <div class="FormControl-info">The full website URL (e.g. <code>https://www.woolworths.com.au</code>)</div>
@@ -64,6 +64,7 @@
 
 
 <button id="debug_toggle" onclick="toggleDebug()">Toggle Debug</button>
+<br />
 <pre id="debug" style="display:none;white-space:pre-wrap;"></pre>
 
 <script type="text/javascript">
@@ -85,6 +86,7 @@
     // included, separated by spaces.
     var SCOPES = "https://www.googleapis.com/auth/spreadsheets.readonly";
 
+    var urlForm = document.getElementById('urlForm');
     var authorizeButton = document.getElementById('authorize_button');
     var signoutButton = document.getElementById('signout_button');
 
@@ -124,10 +126,12 @@
      */
     function updateSigninStatus(isSignedIn) {
         if (isSignedIn) {
+            urlForm.style.display = 'block';
             authorizeButton.style.display = 'none';
             signoutButton.style.display = 'block';
             getConfig();
         } else {
+            urlForm.style.display = 'none';
             authorizeButton.style.display = 'block';
             signoutButton.style.display = 'none';
         }
